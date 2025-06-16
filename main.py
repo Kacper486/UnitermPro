@@ -1,3 +1,4 @@
+import sys
 import tkinter as tk
 import tkinter.font as tkFont
 from tkinter import PhotoImage
@@ -67,50 +68,7 @@ class Uniterm2Frame(tk.Frame):
         a, b, c = self.get_abc()
         self.callback(x, y, wybrane, a, b, c)
 
-class ListaFrame(tk.Frame):
-    def __init__(self, master, get_abc_callback, get_xy_callback, get_wybor_callback, **kwargs):
-        super().__init__(master, **kwargs)
-        self.get_abc = get_abc_callback
-        self.get_xy = get_xy_callback
-        self.get_wybor = get_wybor_callback
-        self.build()
 
-    def build(self):
-        tk.Label(self, text="Zapis do JSON", font=("Arial", 12, "bold")).pack(pady=(10, 5))
-
-        tk.Label(self, text="Nazwa:").pack(anchor="w", padx=10)
-        self.entry_nazwa = tk.Entry(self)
-        self.entry_nazwa.pack(padx=10, pady=(0, 10), fill="x")
-
-        btn_zapisz = tk.Button(self, text="Zapisz", command=self.zapisz)
-        btn_zapisz.pack(pady=5)
-
-    def zapisz(self):
-        from tkinter import messagebox
-        nazwa = self.entry_nazwa.get()
-        if not nazwa.strip():
-            messagebox.showwarning("Brak nazwy", "Podaj nazwę zapisu.")
-            return
-
-        a, b, c = self.get_abc()
-        x, y = self.get_xy()
-        wybor = self.get_wybor()
-
-        entry = {
-            "nazwa": nazwa.strip(),
-            "a": a,
-            "b": b,
-            "c": c,
-            "x": x,
-            "y": y,
-            "wybor": wybor
-        }
-
-        try:
-            JsonSaver.save_entry(entry)
-            messagebox.showinfo("Sukces", "Zapisano dane do pliku JSON.")
-        except Exception as e:
-            messagebox.showerror("Błąd", f"Nie udało się zapisać danych: {e}")
 class BottomFrame(tk.Frame):
     def __init__(self, master, nawias_img):
         super().__init__(master, bg="white")
@@ -281,12 +239,20 @@ class Lista(tk.Frame):
         except Exception as e:
             messagebox.showerror("Błąd", f"Nie udało się usunąć zapisu: {e}")
 
+def resource_path(relative_path):
+    """Zwraca ścieżkę do pliku zasobu – działa zarówno z .py jak i z .exe"""
+    try:
+        base_path = sys._MEIPASS  # folder tymczasowy w PyInstaller
+    except AttributeError:
+        base_path = os.path.abspath(".")  # normalne uruchomienie
+    return os.path.join(base_path, relative_path)
+
 class App:
     def __init__(self, root):
         self.root = root
         self.root.title("Projekt MASI")
         self.root.geometry("1000x600")
-        self.nawias_img = PhotoImage(file="nawias1.png")
+        self.nawias_img = PhotoImage(file=resource_path("nawias1.png"))
         self.create_widgets()
 
     def create_widgets(self):
@@ -305,7 +271,7 @@ class App:
             set_abc_callback=self.set_abc,
             set_xy_callback=self.set_xy,
             set_wybor_callback=self.set_wybor,
-            on_load_callback=self.on_wczytaj_zapisu
+            on_load_callback=self.wczytaj
         )
         self.lista.place(relx=0.6, rely=0, relwidth=0.4, relheight=0.5)
 
@@ -347,7 +313,7 @@ class App:
     def set_wybor(self, wybor):
         self.uniterm2.variable.set(wybor)
 
-    def on_wczytaj_zapisu(self):
+    def wczytaj(self):
         a, b, c = self.uniterm1.get_values()
         x, y = self.get_xy()
         wybor = self.get_wybor()
@@ -389,7 +355,6 @@ class JsonSaver:
         data = [item for item in data if item["id"] != entry_id]
         with open(JsonSaver.FILE_PATH, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
-
 
 if __name__ == "__main__":
     root = tk.Tk()
